@@ -15,3 +15,8 @@ class Config:
         self.vehicle_hitbox_medium_color = "green"
         self.vehicle_hitbox_large = (40, 60)
         self.vehicle_hitbox_large_color = "blue"
+
+
+        self.inventory_slot = 64
+        self.inventory_gap = 10
+

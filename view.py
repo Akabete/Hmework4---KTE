@@ -1,12 +1,14 @@
 import pygame
+from pygame import Color
+
 
 class View:
     def __init__(self, screen, config):
         self.screen = screen
         self.config = config
 
-        self.map_surface = pygame.Surface(self.config.map_size)
-        map_texture = pygame.image.load(self.config.map_texture)
+        self.map_surface = pygame.Surface(self.config.map_size).convert()
+        map_texture = pygame.image.load(self.config.map_texture).convert()
 
         map_texture_image = pygame.transform.scale(map_texture, self.config.map_size)
         self.map_surface.blit(map_texture_image, (0, 0))
@@ -30,8 +32,15 @@ class View:
         elif camera_y > self.config.map_size[1] - self.config.screen_size[1]:
             camera_y = self.config.map_size[1] - self.config.screen_size[1]
 
+        visible_area_rect = pygame.Rect(
+            camera_x,
+            camera_y,
+            self.config.screen_size[0],
+            self.config.screen_size[1]
+        )
+
         self.screen.fill("black")
-        self.screen.blit(self.map_surface, (-camera_x, -camera_y))
+        self.screen.blit(self.map_surface, (0, 0), visible_area_rect)
 
         player_screen_rect = player_model.rect.copy()
 
@@ -40,4 +49,31 @@ class View:
 
         pygame.draw.rect(self.screen, self.config.player_color, player_screen_rect)
 
+        self.draw_inventory(player_model)
+
         pygame.display.flip()
+
+    def draw_inventory(self, player_model):
+        inventory = player_model.inventory
+#        total_width = (inventory.capacity * self.config.inventory_slot) + ((inventory.capacity - 1) * self.config.inventory_gap)
+
+        start_x = 5
+        start_y = 5
+        columns = 3
+
+        for i in range(inventory.capacity):
+            row = i // columns
+            column = i % columns
+            slot_x = start_x + (column * self.config.inventory_slot + (column * self.config.inventory_gap) - 1)
+            slot_y = start_y + (row * self.config.inventory_slot + (row * self.config.inventory_gap) - 1)
+
+            slot_rect = pygame.Rect(slot_x, slot_y, self.config.inventory_slot, self.config.inventory_slot)
+
+            if i == inventory.selected_index:
+                color = Color(0, 0, 255, 128)
+                width = 10
+            else:
+                color = "dark gray"
+                width = 5
+
+            pygame.draw.rect(self.screen, color, slot_rect, width)
