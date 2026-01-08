@@ -1,9 +1,6 @@
 import pygame
 import sys
 
-import model
-
-
 class Controller:
     def __init__(self, model, view, config, item_manager):
         self.model = model
@@ -49,6 +46,8 @@ class Controller:
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_e:
                     self.model.item_picker(self.item_manager)
+                if event.key == pygame.K_q:
+                    self.model.item_dropper(self.item_manager)
 
 
     def main_loop(self):

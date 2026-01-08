@@ -18,8 +18,11 @@ class Config:
 
 
         self.inventory_slot = 64
-        self.item_size = 64
         self.inventory_gap = 10
+
+        self.item_size = 64
+        self.item_limit = 100
+
 
         self.name_melee = "Crowbar"
         self.name_pistol = "Pistol"

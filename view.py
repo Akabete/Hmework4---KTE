@@ -6,6 +6,14 @@ class View:
     def __init__(self, screen, config):
         self.screen = screen
         self.config = config
+        self.textures = {
+            self.config.melee_texture: pygame.image.load(self.config.melee_texture).convert_alpha(),
+            self.config.pistol_texture: pygame.image.load(self.config.pistol_texture).convert_alpha(),
+            self.config.rifle_texture: pygame.image.load(self.config.rifle_texture).convert_alpha(),
+            self.config.special_texture: pygame.image.load(self.config.special_texture).convert_alpha(),
+            self.config.throwable_texture: pygame.image.load(self.config.throwable_texture).convert_alpha()
+
+        }
 
         self.map_surface = pygame.Surface(self.config.map_size).convert()
         map_texture = pygame.image.load(self.config.map_texture).convert()
@@ -56,9 +64,7 @@ class View:
             screen_x = item.coordinate_x - camera_x
             screen_y = item.coordinate_y - camera_y
 
-            item_texture = pygame.image.load(item.texture).convert_alpha()
-
-            self.screen.blit(item_texture,( screen_x, screen_y))
+            self.screen.blit(self.textures[item.texture],( screen_x, screen_y))
 
 
 

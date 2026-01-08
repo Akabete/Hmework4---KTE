@@ -57,6 +57,16 @@ class Player:
                 item_manager.items_spawned.remove(item)
                 return
 
+    def item_dropper(self, item_manager):
+        item_to_drop = self.inventory.slots[self.inventory.selected_index]
+        if item_to_drop is not None:
+            item_to_drop.coordinate_x = self.rect.x
+            item_to_drop.coordinate_y = self.rect.y
+
+            item_manager.items_spawned.append(item_to_drop)
+            self.inventory.slots[self.inventory.selected_index] = None
+
+
 
 class Item:
     def __init__(self, config, coordinate_x, coordinate_y, name, texture, spawn_frequency):
@@ -93,7 +103,7 @@ class Item_Manager:
         self.items_spawned = []
 
     def spawn_items(self):
-        for i in range(50):
+        for i in range(self.config.item_limit):
             rand_x = random.randint(0, self.config.map_size[0])
             rand_y = random.randint(0, self.config.map_size[1])
 
