@@ -17,7 +17,7 @@ class View:
             pygame.draw.line(self.map_surface, (100, 100, 100), (x, 0), (x, config.map_size[1]))
             pygame.draw.line(self.map_surface, (100, 100, 100), (0, x), (config.map_size[0], x))
 
-    def draw_world(self, player_model):
+    def draw_world(self, player_model, item_manager):
 
         camera_x = player_model.rect.centerx - (self.config.screen_size[0] / 2)
         camera_y = player_model.rect.centery - (self.config.screen_size[1] / 2)
@@ -51,6 +51,17 @@ class View:
 
         self.draw_inventory(player_model)
 
+
+        for item in item_manager.items_spawned:
+            screen_x = item.coordinate_x - camera_x
+            screen_y = item.coordinate_y - camera_y
+
+            item_texture = pygame.image.load(item.texture).convert_alpha()
+
+            self.screen.blit(item_texture,( screen_x, screen_y))
+
+
+
         pygame.display.flip()
 
     def draw_inventory(self, player_model):
@@ -77,3 +88,9 @@ class View:
                 width = 5
 
             pygame.draw.rect(self.screen, color, slot_rect, width)
+
+            if inventory.slots[i] is not None:
+                inventory_item = inventory.slots[i].texture
+                item_texture = pygame.image.load(inventory_item).convert_alpha()
+
+                self.screen.blit(item_texture,(slot_rect.x, slot_rect.y))

@@ -5,12 +5,13 @@ import model
 
 
 class Controller:
-    def __init__(self, model, view, config):
+    def __init__(self, model, view, config, item_manager):
         self.model = model
         self.view = view
         self.config = config
         self.clock = pygame.time.Clock()
         self.running = True
+        self.item_manager = item_manager
 
     def movement_handler(self, dt):
         keys = pygame.key.get_pressed()
@@ -45,6 +46,10 @@ class Controller:
             if event.key in inventory_key_map:
                 self.model.inventory.select_slot(inventory_key_map[event.key])
 
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_e:
+                    self.model.item_picker(self.item_manager)
+
 
     def main_loop(self):
 
@@ -58,7 +63,7 @@ class Controller:
             dt = self.clock.tick(self.config.fps) / 1000.0
 
             self.movement_handler(dt)
-            self.view.draw_world(self.model)
+            self.view.draw_world(self.model, self.item_manager)
 
             pygame.display.set_caption(f"GTA Łódź - FPS: {int(self.clock.get_fps())}")
 
