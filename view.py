@@ -1,5 +1,6 @@
 import pygame
 from pygame import Color
+import math
 
 
 class View:
@@ -12,6 +13,19 @@ class View:
             self.config.rifle_texture: pygame.image.load(self.config.rifle_texture).convert_alpha(),
             self.config.special_texture: pygame.image.load(self.config.special_texture).convert_alpha(),
             self.config.throwable_texture: pygame.image.load(self.config.throwable_texture).convert_alpha()
+
+        }
+        self.hand_textures = {
+            self.config.melee_texture: pygame.transform.scale(pygame.image.load(self.config.melee_texture).convert_alpha(),
+                                                        (self.config.item_in_hand_size, self.config.item_in_hand_size)),
+            self.config.pistol_texture: pygame.transform.scale(pygame.image.load(self.config.pistol_texture).convert_alpha(),
+                                                        (self.config.item_in_hand_size, self.config.item_in_hand_size)),
+            self.config.rifle_texture: pygame.transform.scale(pygame.image.load(self.config.rifle_texture).convert_alpha(),
+                                                        (self.config.item_in_hand_size, self.config.item_in_hand_size)),
+            self.config.special_texture: pygame.transform.scale(pygame.image.load(self.config.special_texture).convert_alpha(),
+                                                        (self.config.item_in_hand_size, self.config.item_in_hand_size)),
+            self.config.throwable_texture: pygame.transform.scale(pygame.image.load(self.config.throwable_texture).convert_alpha(),
+                                                        (self.config.item_in_hand_size, self.config.item_in_hand_size)),
 
         }
 
@@ -66,6 +80,38 @@ class View:
 
             self.screen.blit(self.textures[item.texture],( screen_x, screen_y))
 
+        active_item = player_model.inventory.slots[player_model.inventory.selected_index]
+
+        if active_item is not None:
+            mouse_x, mouse_y = pygame.mouse.get_pos()
+            player_x, player_y = player_screen_rect.center
+
+            dx = mouse_x - player_x
+            dy = mouse_y - player_y
+
+            angle = math.atan2(dy, dx)
+            angle_degrees = -math.degrees(angle)
+
+            active_sprite = self.hand_textures[active_item.texture]
+
+            if dx < 0:
+                active_sprite = pygame.transform.flip(active_sprite, False, True)
+
+            rotated_item = pygame.transform.rotate(active_sprite, angle_degrees)
+
+            ellipse_x = math.cos(angle) * 30
+            ellipse_y = math.sin(angle) * 10
+
+            new_rect = rotated_item.get_rect()
+
+            item_position_x = player_screen_rect.centerx + ellipse_x
+            item_position_y = player_screen_rect.centery + ellipse_y
+
+            new_rect.center = item_position_x, item_position_y
+
+            self.screen.blit(rotated_item, new_rect)
+
+
 
 
         pygame.display.flip()
@@ -97,6 +143,6 @@ class View:
 
             if inventory.slots[i] is not None:
                 inventory_item = inventory.slots[i].texture
-                item_texture = pygame.image.load(inventory_item).convert_alpha()
+                item_texture = self.textures[inventory_item]
 
                 self.screen.blit(item_texture,(slot_rect.x, slot_rect.y))

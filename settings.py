@@ -21,6 +21,7 @@ class Config:
         self.inventory_gap = 10
 
         self.item_size = 64
+        self.item_in_hand_size = 32
         self.item_limit = 100
 
 
