@@ -99,13 +99,13 @@ class View:
 
             rotated_item = pygame.transform.rotate(active_sprite, angle_degrees)
 
-            ellipse_x = math.cos(angle) * 30
-            ellipse_y = math.sin(angle) * 10
+            circle_x = math.cos(angle) * 30
+            circle_y = math.sin(angle) * 30
 
             new_rect = rotated_item.get_rect()
 
-            item_position_x = player_screen_rect.centerx + ellipse_x
-            item_position_y = player_screen_rect.centery + ellipse_y
+            item_position_x = player_screen_rect.centerx + circle_x
+            item_position_y = player_screen_rect.centery + circle_y
 
             new_rect.center = item_position_x, item_position_y
 
