@@ -69,15 +69,19 @@ class Player:
 
 
 class Item:
-    def __init__(self, config, coordinate_x, coordinate_y, name, texture, spawn_frequency):
+    def __init__(self, config, coordinate_x, coordinate_y, name, texture, spawn_frequency, use_speed):
         self.config = config
         self.coordinate_x = coordinate_x
         self.coordinate_y = coordinate_y
         self.name = name
         self.texture = texture
         self.spawn_frequency = spawn_frequency
+        self.use_speed = use_speed
 
         self.hitbox = (self.coordinate_x, self.coordinate_y, self.config.item_size, self.config.item_size)
+
+        self.last_use_time = 0
+
 
     def use(self, player):
         #default behaviour, simply for inheritances
@@ -85,16 +89,16 @@ class Item:
 
 
 class Weapon(Item):
-    def __init__(self, config, coordinate_x, coordinate_y, name, texture, spawn_frequency, damage, distance, explosion_radius):
-        super().__init__(config, coordinate_x, coordinate_y, name, texture, spawn_frequency)
+    def __init__(self, config, coordinate_x, coordinate_y, name, texture, spawn_frequency, use_speed, damage, distance, explosion_radius):
+        super().__init__(config, coordinate_x, coordinate_y, name, texture, spawn_frequency, use_speed)
         self.damage = damage
         self.distance = distance
         self.explosion_radius = explosion_radius
 
 
 class Food(Item):
-    def __init__(self, config, coordinate_x, coordinate_y, name, texture, spawn_frequency, healage):
-        super().__init__(config, coordinate_x, coordinate_y, name, texture, spawn_frequency)
+    def __init__(self, config, coordinate_x, coordinate_y, name, texture, spawn_frequency, use_speed, healage):
+        super().__init__(config, coordinate_x, coordinate_y, name, texture, spawn_frequency, use_speed)
         self.healage = healage
 
 class Item_Manager:
@@ -112,31 +116,31 @@ class Item_Manager:
             if self.config.frequency_melee[0] <= roll <= self.config.frequency_melee[1]:
                 melee = Weapon(self.config, rand_x, rand_y, self.config.name_melee, self.config.melee_texture,
                              self.config.frequency_melee, self.config.damage_melee,
-                             self.config.range_melee, self.config.explosion_radius_else)
+                             self.config.range_melee, self.config.explosion_radius_else, self.config.use_speed_melee)
                 self.items_spawned.append(melee)
 
             elif self.config.frequency_pistol[0] <= roll <= self.config.frequency_pistol[1]:
                 pistol = Weapon(self.config, rand_x, rand_y, self.config.name_pistol, self.config.pistol_texture,
                              self.config.frequency_pistol, self.config.damage_pistol,
-                             self.config.range_pistol, self.config.explosion_radius_else)
+                             self.config.range_pistol, self.config.explosion_radius_else, self.config.use_speed_pistol)
                 self.items_spawned.append(pistol)
 
             elif self.config.frequency_rifle[0] <= roll <= self.config.frequency_rifle[1]:
                 rifle = Weapon(self.config, rand_x, rand_y, self.config.name_rifle, self.config.rifle_texture,
                             self.config.frequency_rifle, self.config.damage_rifle,
-                            self.config.range_rifle, self.config.explosion_radius_else)
+                            self.config.range_rifle, self.config.explosion_radius_else, self.config.use_speed_rifle)
                 self.items_spawned.append(rifle)
 
             elif roll == self.config.frequency_special:
                 special = Weapon(self.config, rand_x, rand_y, self.config.name_special, self.config.special_texture,
                              self.config.frequency_special, self.config.damage_special,
-                             self.config.range_special, self.config.explosion_radius_else)
+                             self.config.range_special, self.config.explosion_radius_else, self.config.use_speed_special)
                 self.items_spawned.append(special)
 
             elif self.config.frequency_throwable[0] <= roll <= self.config.frequency_throwable[1]:
                 throwable = Weapon(self.config, rand_x, rand_y, self.config.name_throwable, self.config.throwable_texture,
                              self.config.frequency_throwable, self.config.damage_throwable,
-                             self.config.range_throwable, self.config.explosion_radius_throwable)
+                             self.config.range_throwable, self.config.explosion_radius_throwable, self.config.use_speed_throwable)
                 self.items_spawned.append(throwable)
 
 

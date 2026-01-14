@@ -1,6 +1,9 @@
 import pygame
 import sys
 
+import model
+
+
 class Controller:
     def __init__(self, model, view, config, item_manager):
         self.model = model
@@ -49,6 +52,18 @@ class Controller:
                 if event.key == pygame.K_q:
                     self.model.item_dropper(self.item_manager)
 
+    def use_handler(self):
+        click = pygame.mouse.get_pressed()
+        if click[0] == 1:
+            inventory = self.model.inventory
+            active_item = inventory.slots[inventory.selected_index]
+
+            if active_item is not None:
+                current_time = pygame.time.get_ticks()
+
+                if current_time - active_item.last_use_time > active_item.use_speed:
+                    active_item.last_use_time = current_time
+
 
     def main_loop(self):
 
@@ -62,6 +77,7 @@ class Controller:
             dt = self.clock.tick(self.config.fps) / 1000.0
 
             self.movement_handler(dt)
+            self.use_handler()
             self.view.draw_world(self.model, self.item_manager)
 
             pygame.display.set_caption(f"GTA Łódź - FPS: {int(self.clock.get_fps())}")

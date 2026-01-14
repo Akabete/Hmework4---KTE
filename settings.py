@@ -55,6 +55,12 @@ class Config:
         self.range_special = 10
         self.range_throwable = 100
 
+        self.use_speed_melee = 5000
+        self.use_speed_pistol = 1500
+        self.use_speed_rifle = 1000
+        self.use_speed_special = 2500
+        self.use_speed_throwable = 3000
+
         self.explosion_radius_throwable = 50
         self.explosion_radius_else = 0
 

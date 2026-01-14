@@ -1,6 +1,6 @@
 import pygame
 from pygame import Color
-import math
+import math, random
 
 
 class View:
@@ -97,6 +97,46 @@ class View:
             if dx < 0:
                 active_sprite = pygame.transform.flip(active_sprite, False, True)
 
+            current_time = pygame.time.get_ticks()
+            time_passed = current_time - active_item.last_use_time
+
+            animation_duration = active_item.use_speed
+            animation_offset = 0
+
+            if "Crowbar" in active_item.name: animation_duration = 300
+            elif "Pistol" in active_item.name: animation_duration = 150
+            elif "Rifle" in active_item.name: animation_duration = 150
+            elif "Grenade" in active_item.name: animation_duration = 150
+
+            if "Flamethrower" in active_item.name:
+                if time_passed < 100:
+                    animation_offset = random.randint(-3, 3)
+
+            elif "Crowbar" in active_item.name or "Grenade" in active_item.name:
+                if time_passed < animation_duration:
+                    progress = time_passed / animation_duration
+                    sin_value = math.sin(progress * math.pi)
+
+                    swing_strength = 80
+                    if dx > 0:
+                        animation_offset = -sin_value * swing_strength
+                    else:
+                        animation_offset = sin_value * swing_strength
+
+            else:
+                if time_passed < animation_duration:
+                    progress = time_passed / animation_duration
+                    sin_value = math.sin(progress * math.pi)
+
+                    recoil_strength = 15
+
+                    if dx > 0:
+                        animation_offset = sin_value * recoil_strength
+                    else:
+                        animation_offset = -sin_value * recoil_strength
+
+            angle_degrees += animation_offset
+
             rotated_item = pygame.transform.rotate(active_sprite, angle_degrees)
 
             circle_x = math.cos(angle) * 30
@@ -107,7 +147,12 @@ class View:
             item_position_x = player_screen_rect.centerx + circle_x
             item_position_y = player_screen_rect.centery + circle_y
 
-            new_rect.center = item_position_x, item_position_y
+            hand_position = (item_position_x, item_position_y)
+
+            if dx > 0:
+                new_rect.midleft = hand_position
+            else:
+                new_rect.midright = hand_position
 
             self.screen.blit(rotated_item, new_rect)
 
