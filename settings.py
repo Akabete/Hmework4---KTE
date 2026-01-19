@@ -8,6 +8,9 @@ class Config:
 
         self.person_hitbox = (40, 60)
         self.player_color = "red"
+        self.enemy_color = "blue"
+        self.person_hp = 100
+        self.car_hp = 500
 
         self.vehicle_hitbox_small = (40, 60)
         self.vehicle_hitbox_small_color = "yellow"
@@ -23,6 +26,8 @@ class Config:
         self.item_size = 64
         self.item_in_hand_size = 32
         self.item_limit = 100
+
+        self.enemy_limit = 50
 
 
         self.name_melee = "Crowbar"

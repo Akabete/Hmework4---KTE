@@ -5,13 +5,14 @@ import model
 
 
 class Controller:
-    def __init__(self, model, view, config, item_manager):
+    def __init__(self, model, view, config, item_manager, enemy_manager):
         self.model = model
         self.view = view
         self.config = config
         self.clock = pygame.time.Clock()
         self.running = True
         self.item_manager = item_manager
+        self.enemy_manager = enemy_manager
 
     def movement_handler(self, dt):
         keys = pygame.key.get_pressed()
@@ -76,9 +77,12 @@ class Controller:
 
             dt = self.clock.tick(self.config.fps) / 1000.0
 
+            for enemy in self.enemy_manager.enemies_spawned:
+                enemy.random_movement(dt, self.model)
+
             self.movement_handler(dt)
             self.use_handler()
-            self.view.draw_world(self.model, self.item_manager)
+            self.view.draw_world(self.model, self.item_manager, self.enemy_manager)
 
             pygame.display.set_caption(f"GTA Łódź - FPS: {int(self.clock.get_fps())}")
 

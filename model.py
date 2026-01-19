@@ -13,6 +13,7 @@ class Player:
         self.position_x = float(self.rect.x)
         self.position_y = float(self.rect.y)
         self.speed = 300.0
+        self.health = self.config.person_hp
         self.inventory = Inventory()
 
     def move(self, direction_x, direction_y, sprint, dt):
@@ -65,6 +66,80 @@ class Player:
 
             item_manager.items_spawned.append(item_to_drop)
             self.inventory.slots[self.inventory.selected_index] = None
+
+
+class Enemy(Player):
+    def __init__(self, config):
+        super().__init__(config)
+        spawn_position_x = random.randint(0, self.config.map_size[0])
+        spawn_position_y = random.randint(0, self.config.map_size[1])
+        self.rect = pygame.Rect(spawn_position_x, spawn_position_y, self.config.person_hitbox[0], self.config.person_hitbox[1])
+
+        self.position_x = float(self.rect.x)
+        self.position_y = float(self.rect.y)
+
+        self.last_decision_time = 0
+        self.direction = [0, 0]
+        self.decision_time = 1000
+        self.does_sprint = 0
+
+    def random_movement(self, dt, player):
+        current_time = pygame.time.get_ticks()
+        if current_time - self.last_decision_time > self.decision_time:
+            self.direction[0] = random.randint(-1, 1)
+            self.direction[1] = random.randint(-1, 1)
+            self.does_sprint = random.randint(0, 1)
+            self.last_decision_time = current_time
+
+        self.move(self.direction[0], self.direction[1], self.does_sprint, dt)
+
+
+class Enemy_Manager:
+    def __init__(self, config):
+        self.enemies_spawned = []
+        self.config = config
+
+    def spawn_enemies(self):
+        while len(self.enemies_spawned) < self.config.enemy_limit:
+            enemy = Enemy(self.config)
+
+            roll = random.random()
+
+            if self.config.frequency_melee[0] <= roll <= self.config.frequency_melee[1]:
+                melee = Weapon(self.config, 0, 0, self.config.name_melee, self.config.melee_texture,
+                               self.config.frequency_melee, self.config.damage_melee,
+                               self.config.range_melee, self.config.explosion_radius_else, self.config.use_speed_melee)
+                enemy.inventory.slots[0] =  melee
+
+            elif self.config.frequency_pistol[0] <= roll <= self.config.frequency_pistol[1]:
+                pistol = Weapon(self.config, 0, 0, self.config.name_pistol, self.config.pistol_texture,
+                                self.config.frequency_pistol, self.config.damage_pistol,
+                                self.config.range_pistol, self.config.explosion_radius_else,
+                                self.config.use_speed_pistol)
+                enemy.inventory.slots[0] =  pistol
+
+            elif self.config.frequency_rifle[0] <= roll <= self.config.frequency_rifle[1]:
+                rifle = Weapon(self.config, 0, 0, self.config.name_rifle, self.config.rifle_texture,
+                               self.config.frequency_rifle, self.config.damage_rifle,
+                               self.config.range_rifle, self.config.explosion_radius_else, self.config.use_speed_rifle)
+                enemy.inventory.slots[0] = rifle
+
+            elif roll == self.config.frequency_special:
+                special = Weapon(self.config, 0, 0, self.config.name_special, self.config.special_texture,
+                                 self.config.frequency_special, self.config.damage_special,
+                                 self.config.range_special, self.config.explosion_radius_else,
+                                 self.config.use_speed_special)
+                enemy.inventory.slots[0] = special
+
+            elif self.config.frequency_throwable[0] <= roll <= self.config.frequency_throwable[1]:
+                throwable = Weapon(self.config, 0, 0, self.config.name_throwable,
+                                   self.config.throwable_texture,
+                                   self.config.frequency_throwable, self.config.damage_throwable,
+                                   self.config.range_throwable, self.config.explosion_radius_throwable,
+                                   self.config.use_speed_throwable)
+                enemy.inventory.slots[0] =  throwable
+
+            self.enemies_spawned.append(enemy)
 
 
 

@@ -39,7 +39,7 @@ class View:
             pygame.draw.line(self.map_surface, (100, 100, 100), (x, 0), (x, config.map_size[1]))
             pygame.draw.line(self.map_surface, (100, 100, 100), (0, x), (config.map_size[0], x))
 
-    def draw_world(self, player_model, item_manager):
+    def draw_world(self, player_model, item_manager, enemy_manager):
 
         camera_x = player_model.rect.centerx - (self.config.screen_size[0] / 2)
         camera_y = player_model.rect.centery - (self.config.screen_size[1] / 2)
@@ -68,6 +68,17 @@ class View:
 
         player_screen_rect.x = player_model.rect.x - camera_x
         player_screen_rect.y = player_model.rect.y - camera_y
+
+        pygame.draw.rect(self.screen, self.config.player_color, player_screen_rect)
+
+
+        for enemy in enemy_manager.enemies_spawned:
+            enemy_screen_rect = enemy.rect.copy()
+
+            enemy_screen_rect.x = enemy_screen_rect.x - camera_x
+            enemy_screen_rect.y = enemy_screen_rect.y - camera_y
+
+            pygame.draw.rect(self.screen, self.config.enemy_color, enemy_screen_rect)
 
         pygame.draw.rect(self.screen, self.config.player_color, player_screen_rect)
 
