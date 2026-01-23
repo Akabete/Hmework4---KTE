@@ -1,6 +1,6 @@
 import pygame
 from settings import Config
-from model import Player, Item_Manager, Enemy_Manager
+from model import Player, Item_Manager, Enemy_Manager, Projectile_Manager, Cars_Manager
 from view import View
 from controller import Controller
 
@@ -13,7 +13,6 @@ def main():
     screen = pygame.display.set_mode(config.screen_size)
 
     player = Player(config)
-    view = View(screen, config)
 
     enemy_manager = Enemy_Manager(config)
     enemy_manager.spawn_enemies()
@@ -21,7 +20,14 @@ def main():
     item_manager = Item_Manager(config)
     item_manager.spawn_items()
 
-    controller = Controller(player, view, config, item_manager, enemy_manager)
+    projectile_manager = Projectile_Manager()
+
+    cars_manager = Cars_Manager(config)
+
+    view = View(screen, config, projectile_manager, cars_manager)
+
+    controller = Controller(player, view, config, item_manager,
+                enemy_manager, projectile_manager, cars_manager)
 
 
     controller.main_loop()
