@@ -5,27 +5,28 @@ import math
 class Player:
     def __init__(self, config):
         self.config = config
-        self.rect = pygame.Rect(
-            300, 300,
-            self.config.person_hitbox[0],
-            self.config.person_hitbox[1]
-        )
+        player_settings = self.config.player
+        start_x, start_y = player_settings["spawn_location"]
 
-        self.position_x = float(self.rect.x)
-        self.position_y = float(self.rect.y)
-        self.speed = 300.0
-        self.health = self.config.person_hp
+        self.rect = pygame.Rect(start_x, start_y,
+                    player_settings["hitbox"][0], player_settings["hitbox"][1])
+        self.position_x = float(start_x)
+        self.position_y = float(start_y)
+        self.hp = player_settings["hp"]
+        self.speed = player_settings["speed"]
+        self.sprint_bonus = player_settings["sprint_bonus"]
+
         self.inventory = Inventory()
         self.current_vehicle = None
+        self.visible = True
 
     def move(self, direction_x, direction_y, sprint, dt):
         current_speed = self.speed
         if sprint:
-            current_speed += 100.0
+            current_speed += self.sprint_bonus
 
         if direction_x and direction_y:
             current_speed *= 0.7071
-
 
         change_x = direction_x * current_speed * dt
         change_y = direction_y * current_speed * dt
@@ -36,24 +37,30 @@ class Player:
         self.rect.x = int(self.position_x)
         self.rect.y = int(self.position_y)
 
-
         if self.rect.left < 0:
             self.rect.left = 0
             self.position_x = float(self.rect.x)
-        elif self.rect.right > self.config.map_size[0]:
-            self.rect.right = self.config.map_size[0]
+        elif self.rect.right > self.config.display["map_size"][0]:
+            self.rect.right = self.config.display["map_size"][0]
             self.position_x = float(self.rect.x)
 
         if self.rect.top < 0:
             self.rect.top = 0
             self.position_y = float(self.rect.y)
-        elif self.rect.bottom > self.config.map_size[1]:
-            self.rect.bottom = self.config.map_size[1]
+        elif self.rect.bottom > self.config.display["map_size"][1]:
+            self.rect.bottom = self.config.display["map_size"][1]
             self.position_y = float(self.rect.y)
+
+
+    def sync_with_vehicle(self):
+        if self.current_vehicle is not None:
+            self.rect.center = self.current_vehicle.rect.center
+            self.position_x = float(self.rect.centerx)
+            self.position_y = float(self.rect.centery)
 
     def item_picker(self, item_manager):
         for item in item_manager.items_spawned[:]:
-            item_hitbox = pygame.Rect(item.coordinate_x, item.coordinate_y, self.config.item_size, self.config.item_size)
+            item_hitbox = pygame.Rect(item.coordinate_x, item.coordinate_y, self.config.items["item_size"], self.config.items["item_size"])
 
             if self.rect.colliderect(item_hitbox) and self.inventory.add_items(item):
                 item_manager.items_spawned.remove(item)
@@ -70,66 +77,63 @@ class Player:
 
 
 class Enemy(Player):
-    def __init__(self, config):
+    def __init__(self, config, start_x, start_y):
         super().__init__(config)
-        spawn_position_x = random.randint(0, self.config.map_size[0])
-        spawn_position_y = random.randint(0, self.config.map_size[1])
-        self.rect = pygame.Rect(spawn_position_x, spawn_position_y, self.config.person_hitbox[0], self.config.person_hitbox[1])
-        self.speed = 150
-        self.damage = self.config.enemy_damage
-        self.last_attack_time = 0
-
-        self.position_x = float(self.rect.x)
-        self.position_y = float(self.rect.y)
-
-        self.last_decision_time = 0
-        self.direction = [0, 0]
-        self.decision_time = 1000
-        self.does_sprint = 0
-
-        self.is_dead = False
+        self.hp = self.config.enemy["hp"]
+        self.damage = self.config.enemy["damage"]
         self.death_time = 0
+        self.last_decision_time = 0
+        self.last_attack_time = 0
+        self.direction = [0, 0]
+        self.does_sprint = 0
+        self.sprint_bonus = self.config.enemy["sprint_bonus"]
 
-    def random_movement(self, dt, player):
-        if self.is_dead:
-            return
+        self.position_x = float(start_x)
+        self.position_y = float(start_y)
+
+        self.rect.x = int(self.position_x)
+        self.rect.y = int(self.position_y)
+
+
+    def think(self, player):
+        if self.hp <= 0: return
 
         current_time = pygame.time.get_ticks()
+        direction_x = self.position_x - player.position_x
+        direction_y = self.position_y - player.position_y
+        distance = math.sqrt((direction_x ** 2) + (direction_y ** 2))
 
-        distance_to_player = math.sqrt( pow(self.position_x - player.position_x, 2) + pow(self.position_y - player.position_y, 2) )
-        if distance_to_player < self.config.distance_to_chase:
-            if player.position_x > self.position_x:
-                self.direction[0] = 1
-            elif player.position_x < self.position_x:
-                self.direction[0] = -1
-            else:
-                self.direction[0] = 0
+        if distance <= self.config.enemy["distance_to_chase"]:
+            distance_x = player.position_x - self.position_x
+            distance_y = player.position_y - self.position_y
 
-            if player.position_y > self.position_y:
-                self.direction[1] = 1
-            elif player.position_y < self.position_y:
-                self.direction[1] = -1
-            else:
-                self.direction[1] = 0
+            if distance > 0:
+                self.direction[0] = distance_x / distance
+                self.direction[1] = distance_y / distance
 
             self.does_sprint = 1
-
-
         else:
-            if current_time - self.last_decision_time > self.decision_time:
-                self.direction[0] = random.randint(-1, 1)
-                self.direction[1] = random.randint(-1, 1)
-                self.does_sprint = random.randint(0, 1)
+            self.does_sprint = 0
+            if current_time - self.last_decision_time > self.config.enemy["decision_speed"]:
+                angle = random.uniform(0, 2 * math.pi)
+                self.direction[0] = math.cos(angle)
+                self.direction[1] = math.sin(angle)
+
                 self.last_decision_time = current_time
+
+
+    def update(self, dt, player):
+        if self.hp <= 0: return
 
         self.move(self.direction[0], self.direction[1], self.does_sprint, dt)
 
         if self.rect.colliderect(player.rect):
             current_time = pygame.time.get_ticks()
-            if current_time - self.last_attack_time > 1000:
-                player.health -= self.damage
-                print(f"Health: {player.health}")
+            if current_time - self.last_attack_time > self.config.enemy["attack_speed"]:
+                player.hp -= self.damage
+                print(f"Health: {player.hp}")
                 self.last_attack_time = current_time
+
 
 
 class Enemy_Manager:
@@ -138,44 +142,21 @@ class Enemy_Manager:
         self.config = config
 
     def spawn_enemies(self):
-        while len(self.enemies_spawned) < self.config.enemy_limit:
-            enemy = Enemy(self.config)
+        while len(self.enemies_spawned) < self.config.enemy["limit"]:
+            spawn_x = random.randint(0, self.config.display["map_size"][0])
+            spawn_y = random.randint(0, self.config.display["map_size"][1])
+            enemy = Enemy(self.config, spawn_x, spawn_y)
+
 
             roll = random.random()
 
-            if self.config.frequency_melee[0] <= roll <= self.config.frequency_melee[1]:
-                melee = Weapon(self.config, 0, 0, self.config.name_melee, self.config.melee_texture,
-                               self.config.frequency_melee, self.config.damage_melee,
-                               self.config.range_melee, self.config.explosion_radius_else, self.config.use_speed_melee)
-                enemy.inventory.slots[0] =  melee
+            for weapon in self.config.spawnable_weapons:
+                low, high = weapon["spawn_frequency"]
 
-            elif self.config.frequency_pistol[0] <= roll <= self.config.frequency_pistol[1]:
-                pistol = Weapon(self.config, 0, 0, self.config.name_pistol, self.config.pistol_texture,
-                                self.config.frequency_pistol, self.config.damage_pistol,
-                                self.config.range_pistol, self.config.explosion_radius_else,
-                                self.config.use_speed_pistol)
-                enemy.inventory.slots[0] =  pistol
-
-            elif self.config.frequency_rifle[0] <= roll <= self.config.frequency_rifle[1]:
-                rifle = Weapon(self.config, 0, 0, self.config.name_rifle, self.config.rifle_texture,
-                               self.config.frequency_rifle, self.config.damage_rifle,
-                               self.config.range_rifle, self.config.explosion_radius_else, self.config.use_speed_rifle)
-                enemy.inventory.slots[0] = rifle
-
-            elif roll == self.config.frequency_special:
-                special = Weapon(self.config, 0, 0, self.config.name_special, self.config.special_texture,
-                                 self.config.frequency_special, self.config.damage_special,
-                                 self.config.range_special, self.config.explosion_radius_else,
-                                 self.config.use_speed_special)
-                enemy.inventory.slots[0] = special
-
-            elif self.config.frequency_throwable[0] <= roll <= self.config.frequency_throwable[1]:
-                throwable = Weapon(self.config, 0, 0, self.config.name_throwable,
-                                   self.config.throwable_texture,
-                                   self.config.frequency_throwable, self.config.damage_throwable,
-                                   self.config.range_throwable, self.config.explosion_radius_throwable,
-                                   self.config.use_speed_throwable)
-                enemy.inventory.slots[0] =  throwable
+                if low <= roll <= high:
+                    new_item = Weapon(self.config, 0, 0, **weapon)
+                    enemy.inventory.slots[0] = new_item
+                    break
 
             self.enemies_spawned.append(enemy)
             print(len(self.enemies_spawned))
@@ -183,43 +164,52 @@ class Enemy_Manager:
 
     def replace_dead_enemies(self):
         for enemy in self.enemies_spawned[:]:
-            if enemy.is_dead and pygame.time.get_ticks() -  enemy.death_time >= 5000:
+            if enemy.hp <= 0 and pygame.time.get_ticks() - enemy.death_time >= self.config.enemy["fade_time"]:
                 self.enemies_spawned.remove(enemy)
                 self.spawn_enemies()
 
+    def reset_manager(self):
+        self.enemies_spawned.clear()
+        self.spawn_enemies()
 
-class Cars(Player):
-    def __init__(self, config, coordinate_x, coordinate_y, texture, max_speed, acceleration, rotation_speed, health, hitbox, angle = 0, current_speed = 0):
-        super().__init__(config)
+
+class Cars:
+    def __init__(self, config, coordinate_x, coordinate_y, texture, max_speed,
+                 acceleration, rotation_speed, health, hitbox, hiding, angle = 0, current_speed = 0):
         self.config = config
-        self.cars_on_map = []
 
-        self.coordinate_x = coordinate_x
-        self.coordinate_y = coordinate_y
+        self.rect = pygame.Rect(coordinate_x, coordinate_y, hitbox[0], hitbox[1])
+        self.position_x = float(coordinate_x)
+        self.position_y = float(coordinate_y)
+
         self.texture = texture
-        self.current_speed = current_speed
         self.max_speed = max_speed
         self.acceleration = acceleration
-        self.health = health
         self.rotation_speed = rotation_speed
+        self.health = health
+        self.hiding = hiding
+
+        self.current_speed = current_speed
         self.angle = angle
-
-        self.rect = pygame.Rect(self.coordinate_x, self.coordinate_y, hitbox[0], hitbox[1])
-
 
 
     def drive(self, direction_x, direction_y, dt):
-        if abs(self.current_speed) < self.max_speed:
-            self.current_speed += self.acceleration * -direction_y * dt
+        if direction_y != 0:
+            push_direction = -direction_y
 
-        if direction_y == 0:
-            self.current_speed -= self.acceleration * dt
-        elif self.current_speed < 0:
-            self.current_speed += self.acceleration * dt
+            if push_direction > 0 and self.current_speed < self.max_speed:
+                self.current_speed += self.acceleration * dt
+            elif push_direction < 0 and self.current_speed > -self.max_speed:
+                self.current_speed -= self.acceleration * dt
 
+        else:
+            if self.current_speed > 0:
+                self.current_speed -= self.config.vehicles["friction"] * dt
+                if self.current_speed < 0: self.current_speed = 0
 
-        if abs(self.current_speed) > 1:
-            self.angle += direction_x * self.rotation_speed * dt
+            elif self.current_speed < 0:
+                self.current_speed += self.config.vehicles["friction"] * dt
+                if self.current_speed > 0: self.current_speed = 0
 
         radians = math.radians(self.angle)
 
@@ -235,16 +225,23 @@ class Cars(Player):
         if self.rect.left < 0:
             self.rect.left = 0
             self.position_x = float(self.rect.x)
-        elif self.rect.right > self.config.map_size[0]:
-            self.rect.right = self.config.map_size[0]
+            self.current_speed = 0
+        elif self.rect.right > self.config.display["map_size"][0]:
+            self.rect.right = self.config.display["map_size"][0]
             self.position_x = float(self.rect.x)
+            self.current_speed = 0
 
         if self.rect.top < 0:
             self.rect.top = 0
             self.position_y = float(self.rect.y)
-        elif self.rect.bottom > self.config.map_size[1]:
-            self.rect.bottom = self.config.map_size[1]
+            self.current_speed = 0
+        elif self.rect.bottom > self.config.display["map_size"][1]:
+            self.rect.bottom = self.config.display["map_size"][1]
             self.position_y = float(self.rect.y)
+            self.current_speed = 0
+
+        if abs(self.current_speed) > 1:
+            self.angle += direction_x * self.rotation_speed * dt
 
 
 class Cars_Manager:
@@ -255,28 +252,21 @@ class Cars_Manager:
     def spawn_cars(self):
 
         spawn_offset = 1
-        while len(self.cars_on_map) < self.config.vehicle_amount:
+        while len(self.cars_on_map) < self.config.vehicles["amount"]:
+            for vehicle_data in self.config.spawnable_vehicles:
+                position_x = self.config.vehicles["first_spawn_x"] * spawn_offset
+                position_y = self.config.vehicles["first_spawn_y"]
 
-            bike = Cars(self.config, (self.config.vehicle_first_x * spawn_offset), self.config.vehicle_first_y,
-                        self.config.vehicle_color_small, self.config.vehicle_speed_small,
-                        self.config.vehicle_acceleration_small, self.config.vehicle_health_small,
-                        self.config.vehicle_rotation_small, self.config.vehicle_hitbox_small)
-            self.cars_on_map.append(bike)
-            spawn_offset += 1
+                new_vehicle = Cars(self.config, position_x, position_y, **vehicle_data)
+                self.cars_on_map.append(new_vehicle)
+                spawn_offset += 1
 
-            car = Cars(self.config, (self.config.vehicle_first_x * spawn_offset), self.config.vehicle_first_y,
-                       self.config.vehicle_color_medium, self.config.vehicle_speed_medium,
-                       self.config.vehicle_acceleration_medium, self.config.vehicle_health_medium,
-                       self.config.vehicle_rotation_medium, self.config.vehicle_hitbox_medium)
-            self.cars_on_map.append(car)
-            spawn_offset += 1
+                if len(self.cars_on_map) >= self.config.vehicles["amount"]:
+                    break
 
-            tank = Cars(self.config, (self.config.vehicle_first_x * spawn_offset), self.config.vehicle_first_y,
-                        self.config.vehicle_color_large, self.config.vehicle_speed_large,
-                        self.config.vehicle_acceleration_large, self.config.vehicle_health_large,
-                        self.config.vehicle_rotation_large, self.config.vehicle_hitbox_large)
-            self.cars_on_map.append(tank)
-
+    def reset_manager(self):
+        self.cars_on_map.clear()
+        self.spawn_cars()
 
 
 class Item:
@@ -289,18 +279,19 @@ class Item:
         self.spawn_frequency = spawn_frequency
         self.use_speed = use_speed
 
-        self.hitbox = (self.coordinate_x, self.coordinate_y, self.config.item_size, self.config.item_size)
+        self.hitbox = (self.coordinate_x, self.coordinate_y, self.config.items["item_size"], self.config.items["item_size"])
 
         self.last_use_time = 0
 
 
 
 class Weapon(Item):
-    def __init__(self, config, coordinate_x, coordinate_y, name, texture, spawn_frequency, use_speed, damage, distance, explosion_radius):
+    def __init__(self, config, coordinate_x, coordinate_y, category, name, texture, spawn_frequency, use_speed, damage, projectile_range, explosion_radius):
         super().__init__(config, coordinate_x, coordinate_y, name, texture, spawn_frequency, use_speed)
         self.damage = damage
-        self.distance = distance
+        self.projectile_range = projectile_range
         self.explosion_radius = explosion_radius
+        self.category = category
 
 
 class Food(Item):
@@ -314,41 +305,23 @@ class Item_Manager:
         self.items_spawned = []
 
     def spawn_items(self):
-        for i in range(self.config.item_limit):
-            rand_x = random.randint(0, self.config.map_size[0])
-            rand_y = random.randint(0, self.config.map_size[1])
-
+        for i in range(self.config.items["item_limit"]):
+            rand_x = random.randint(0, self.config.display["map_size"][0])
+            rand_y = random.randint(0, self.config.display["map_size"][1])
             roll = random.random()
 
-            if self.config.frequency_melee[0] <= roll <= self.config.frequency_melee[1]:
-                melee = Weapon(self.config, rand_x, rand_y, self.config.name_melee, self.config.melee_texture,
-                             self.config.frequency_melee, self.config.use_speed_melee, self.config.damage_melee,
-                               self.config.range_melee, self.config.explosion_radius_else)
-                self.items_spawned.append(melee)
+            for weapon in self.config.spawnable_weapons:
+                low, high = weapon["spawn_frequency"]
 
-            elif self.config.frequency_pistol[0] <= roll <= self.config.frequency_pistol[1]:
-                pistol = Weapon(self.config, rand_x, rand_y, self.config.name_pistol, self.config.pistol_texture,
-                               self.config.frequency_pistol, self.config.use_speed_pistol, self.config.damage_pistol,
-                               self.config.range_pistol, self.config.explosion_radius_else)
-                self.items_spawned.append(pistol)
+                if low <= roll <= high:
+                    new_item = Weapon(self.config, rand_x, rand_y, **weapon)
+                    self.items_spawned.append(new_item)
+                    break
 
-            elif self.config.frequency_rifle[0] <= roll <= self.config.frequency_rifle[1]:
-                rifle = Weapon(self.config, rand_x, rand_y, self.config.name_rifle, self.config.rifle_texture,
-                               self.config.frequency_rifle, self.config.use_speed_rifle, self.config.damage_rifle,
-                               self.config.range_rifle, self.config.explosion_radius_else)
-                self.items_spawned.append(rifle)
 
-            elif roll == self.config.frequency_special:
-                special = Weapon(self.config, rand_x, rand_y, self.config.name_special, self.config.special_texture,
-                               self.config.frequency_special, self.config.use_speed_special, self.config.damage_special,
-                               self.config.range_special, self.config.explosion_radius_else)
-                self.items_spawned.append(special)
-
-            elif self.config.frequency_throwable[0] <= roll <= self.config.frequency_throwable[1]:
-                throwable = Weapon(self.config, rand_x, rand_y, self.config.name_throwable, self.config.throwable_texture,
-                               self.config.frequency_throwable, self.config.use_speed_throwable, self.config.damage_throwable,
-                               self.config.range_throwable, self.config.explosion_radius_throwable)
-                self.items_spawned.append(throwable)
+    def reset_manager(self):
+        self.items_spawned.clear()
+        self.spawn_items()
 
 
 class Projectile:
@@ -401,18 +374,15 @@ class Projectile_Manager:
                 continue
 
             for enemy in enemy_manager.enemies_spawned:
-                if projectile.rect.colliderect(enemy.rect) and not enemy.is_dead:
-                    enemy.health -= projectile.damage
+                if projectile.rect.colliderect(enemy.rect) and enemy.hp > 0:
+                    enemy.hp -= projectile.damage
 
-                    if enemy.health <= 0:
-                        enemy.is_dead = True
+                    if enemy.hp <= 0:
                         enemy.death_time = pygame.time.get_ticks()
                         enemy.item_dropper(item_manager)
 
                     self.remove_projectile(projectile)
                     break
-
-
 
 
 class Inventory:

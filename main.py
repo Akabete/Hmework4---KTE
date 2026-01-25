@@ -10,7 +10,7 @@ def main():
 
     config = Config()
 
-    screen = pygame.display.set_mode(config.screen_size)
+    screen = pygame.display.set_mode(config.display["screen_size"])
 
     player = Player(config)
 

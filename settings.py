@@ -1,97 +1,167 @@
+import pygame
 class Config:
     def __init__(self):
-        self.screen_size = (1200, 800)
-        self.fps = 60
+        self.state = "START"
 
-        self.map_size = (6000, 4000)
-        self.map_texture = "assets/map_placeholder.png"
+        self.display = {
+            "screen_size": (1200, 800),
+            "fps": 60,
+            "map_size": (6000, 4000),
+            "map_texture": "assets/map_placeholder.png",
+            "font": "assets/Pricedown Bl.otf"
+        }
 
-        self.person_hitbox = (40, 60)
-        self.player_color = "black"
-        self.enemy_color = "blue"
-        self.person_hp = 100
+        self.player = {
+            "hitbox": (40, 60),
+            "texture": "black",
+            "hp": 100,
+            "spawn_location": (500, 500),
+            "speed": 300.0,
+            "sprint_bonus": 100.0
+        }
 
-        self.vehicle_amount = 3
-        self.vehicle_first_x = 100
-        self.vehicle_first_y = 100
+        self.enemy = {
+            "hitbox": (40, 60),
+            "texture": "blue",
+            "hp": 100,
+            "speed": 150.0,
+            "sprint_bonus": 100.0,
+            "limit": 25,
+            "damage": 10,
+            "decision_speed": 1000,
+            "attack_speed": 1000,
+            "distance_to_chase": 300,
+            "fade_time": 2500
 
-        self.vehicle_hitbox_small = (30, 70)
-        self.vehicle_color_small = "red"
-        self.vehicle_acceleration_small = 900.0
-        self.vehicle_speed_small = 900
-        self.vehicle_health_small = 70
-        self.vehicle_rotation_small = 90.0
+        }
 
-        self.vehicle_hitbox_medium = (50, 70)
-        self.vehicle_color_medium = "green"
-        self.vehicle_acceleration_medium = 450.0
-        self.vehicle_speed_medium = 800
-        self.vehicle_health_medium = 20
-        self.vehicle_rotation_medium = 60.0
+        self.combat = {
+            "projectile_texture": "assets/bullet.png",
+            "bullet_speed": 500,
+            "grenade_speed": 300,
+            "special_speed": 50,
+            "bullet_limit": 200,
+            "hand_distance": 30,
+            "swing_strength": 80,
+            "recoil_strength": 15
+        }
 
-        self.vehicle_hitbox_large = (60, 80)
-        self.vehicle_color_large = "dark green"
-        self.vehicle_acceleration_large = 150.0
-        self.vehicle_speed_large = 500
-        self.vehicle_health_large = 500
-        self.vehicle_rotation_large = 30.0
+        self.inventory_key_map = {
+            pygame.K_1: 0, pygame.K_2: 1, pygame.K_3: 2,
+            pygame.K_4: 3, pygame.K_5: 4, pygame.K_6: 5,
+            pygame.K_7: 6, pygame.K_8: 7, pygame.K_9: 8
+            }
 
-        self.weapon_bullet_speed = 500
-        self.weapon_grenade_speed = 300
-        self.weapon_special_speed = 50
+        self.vehicles = {
+            "friction": 900,
+            "amount": 3,
+            "first_spawn_x": 100,
+            "first_spawn_y": 100
+        }
 
+        self.bike = {
+            "hiding": False,
+            "hitbox": (30, 70),
+            "texture": "red",
+            "acceleration": 900.0,
+            "max_speed": 900,
+            "health": 50,
+            "rotation_speed": 60.0
+        }
 
-        self.inventory_slot = 64
-        self.inventory_gap = 10
+        self.car = {
+            "hiding": True,
+            "hitbox": (50, 70),
+            "texture": "green",
+            "acceleration": 450.0,
+            "max_speed": 800,
+            "health": 100,
+            "rotation_speed": 60.0
+        }
 
-        self.item_size = 64
-        self.item_in_hand_size = 32
-        self.item_limit = 100
+        self.tank = {
+            "hiding": True,
+            "hitbox": (60, 80),
+            "texture": "dark green",
+            "acceleration": 50.0,
+            "max_speed": 200,
+            "health": 1000,
+            "rotation_speed": 1.0
+        }
 
-        self.enemy_limit = 25
-        self.enemy_damage = 10
-        self.distance_to_chase = 300
+        self.spawnable_vehicles = [
+            self.bike,
+            self.car,
+            self.tank
+        ]
 
+        self.items = {
+            "slot_size": 64,
+            "inventory_gap": 10,
+            "item_size": 64,
+            "item_size_in_hand": 32,
+            "item_limit": 50
+        }
 
-        self.name_melee = "Crowbar"
-        self.name_pistol = "Pistol"
-        self.name_rifle = "Rifle"
-        self.name_special = "Flamethrower"
-        self.name_throwable = "Grenade"
+        self.crowbar = {
+            "category": "melee",
+            "name": "Crowbar",
+            "texture": "assets/crowbar.png",
+            "spawn_frequency": (0.0, 0.2),
+            "damage": 100,
+            "projectile_range": 50,
+            "use_speed": 500,
+            "explosion_radius": 0
+        }
 
-        self.melee_texture = "assets/crowbar.png"
-        self.pistol_texture = "assets/pistol.png"
-        self.rifle_texture = "assets/rifle.png"
-        self.special_texture = "assets/flamethrower.png"
-        self.throwable_texture = "assets/grenade.png"
+        self.pistol = {
+            "category": "pistol",
+            "name": "Pistol",
+            "texture": "assets/pistol.png",
+            "spawn_frequency": (0.3, 0.4),
+            "damage": 25,
+            "projectile_range": 600,
+            "use_speed": 300,
+            "explosion_radius": 0
+        }
 
-        self.frequency_melee = (0.0, 0.2)
-        self.frequency_pistol = (0.3, 0.4)
-        self.frequency_rifle = (0.5, 0.6)
-        self.frequency_special = 0.7
-        self.frequency_throwable = (0.8, 0.9)
+        self.rifle = {
+            "category": "rifle",
+            "name": "Rifle",
+            "texture": "assets/rifle.png",
+            "spawn_frequency": (0.5, 0.6),
+            "damage": 15,
+            "projectile_range": 800,
+            "use_speed": 100,
+            "explosion_radius": 0
+        }
 
-        self.weapon_bullet_limit = 200
-        self.projectile_texture = "assets/bullet.png"
+        self.flamethrower = {
+            "category": "special",
+            "name": "Flamethrower",
+            "texture": "assets/flamethrower.png",
+            "spawn_frequency": (0.7, 0.8),
+            "damage": 5,
+            "projectile_range": 500,
+            "use_speed": 50,
+            "explosion_radius": 0
+        }
 
-        self.damage_melee = 20
-        self.damage_pistol = 15
-        self.damage_rifle = 20
-        self.damage_special = 5
-        self.damage_throwable = 50
+        self.grenade = {
+            "category": "throwable",
+            "name": "Grenade",
+            "texture": "assets/grenade.png",
+            "spawn_frequency": (0.9, 1.0),
+            "damage": 50,
+            "projectile_range": 1000,
+            "use_speed": 500,
+            "explosion_radius": 100
+        }
 
-        self.range_melee = 50
-        self.range_pistol = 600
-        self.range_rifle = 800
-        self.range_special = 500
-        self.range_throwable = 1000
-
-        self.use_speed_melee = 500
-        self.use_speed_pistol = 300
-        self.use_speed_rifle = 100
-        self.use_speed_special = 50
-        self.use_speed_throwable = 1500
-
-        self.explosion_radius_throwable = 50
-        self.explosion_radius_else = 0
-
+        self.spawnable_weapons = [
+            self.crowbar,
+            self.pistol,
+            self.rifle,
+            self.flamethrower,
+            self.grenade
+        ]

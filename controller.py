@@ -2,6 +2,8 @@ import pygame
 import math
 import sys
 
+from pygame import mouse
+
 import model
 
 
@@ -17,7 +19,18 @@ class Controller:
         self.projectile_manager = projectile_manager
         self.cars_manager = cars_manager
 
-    def movement_handler(self, dt):
+
+    def _get_mouse_position(self):
+        screen_x, screen_y = pygame.mouse.get_pos()
+        camera_rect = self.view.get_camera_rect(self.model.rect)
+
+        world_x = screen_x + camera_rect.x
+        world_y = screen_y + camera_rect.y
+
+        return world_x, world_y
+
+    @staticmethod
+    def _get_key_input():
         keys = pygame.key.get_pressed()
         direction_x = 0
         direction_y = 0
@@ -34,27 +47,27 @@ class Controller:
         if keys[pygame.K_LSHIFT]:
             sprint = 1
 
-        if direction_x != 0 or direction_y != 0:
-            if self.model.current_vehicle is None:
-                self.model.move(direction_x, direction_y, sprint, dt)
-            else:
-                self.model.current_vehicle.drive(direction_x, direction_y, dt)
-                self.model.rect.center = self.model.current_vehicle.rect.center
-                self.model.position_x = self.model.current_vehicle.rect.centerx
-                self.model.position_y = self.model.current_vehicle.rect.centery
+        return direction_x, direction_y, sprint
+
+
+    def movement_handler(self, dt):
+        direction_x, direction_y, sprint = self._get_key_input()
+
+        if self.model.current_vehicle is None:
+            self.model.move(direction_x, direction_y, sprint, dt)
+        else:
+            self.model.current_vehicle.drive(direction_x, direction_y, dt)
+            self.model.sync_with_vehicle()
 
     def inventory_handler(self, event):
         if event.type == pygame.MOUSEWHEEL:
-            self.model.inventory.scroll(-event.y)
 
+            self.model.inventory.scroll(-event.y)
         if event.type == pygame.KEYDOWN:
-            inventory_key_map = {
-                pygame.K_1: 0, pygame.K_2: 1, pygame.K_3: 2,
-                pygame.K_4: 3, pygame.K_5: 4, pygame.K_6: 5,
-                pygame.K_7: 6, pygame.K_8: 7, pygame.K_9: 8
-            }
-            if event.key in inventory_key_map:
-                self.model.inventory.select_slot(inventory_key_map[event.key])
+            key_map = self.config.inventory_key_map
+
+            if event.key in key_map:
+                self.model.inventory.select_slot(key_map[event.key])
 
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_e:
@@ -62,86 +75,137 @@ class Controller:
                 if event.key == pygame.K_q:
                     self.model.item_dropper(self.item_manager)
 
+
+    @staticmethod
+    def _is_item_ready(item):
+        current_time = pygame.time.get_ticks()
+        if current_time - item.last_use_time > item.use_speed:
+            return True
+        return False
+
+    @staticmethod
+    def calculate_vector(start_x, start_y, target_x, target_y):
+        difference_x = target_x - start_x
+        difference_y = target_y - start_y
+
+        distance = math.sqrt(difference_x**2 + difference_y**2)
+
+        if distance > 0:
+            dx = difference_x / distance
+            dy = difference_y / distance
+            return dx, dy
+        return 0, 0
+
+
+    def _spawn_projectile(self, direction_x, direction_y, item):
+        item.last_use_time = pygame.time.get_ticks()
+        projectile = model.Projectile(self.config, self.model.rect.centerx,
+                    self.model.rect.centery, direction_x, direction_y, item.damage,
+                    self.config.combat["bullet_speed"], item.projectile_range,
+                    self.config.combat["projectile_texture"])
+        self.projectile_manager.add_projectile(projectile)
+
+
     def use_handler(self):
         click = pygame.mouse.get_pressed()
+        mouse_x, mouse_y = self._get_mouse_position()
+        direction_x, direction_y = self.calculate_vector(
+            self.model.rect.centerx, self.model.rect.centery, mouse_x, mouse_y)
         if click[0] == 1:
             inventory = self.model.inventory
             active_item = inventory.slots[inventory.selected_index]
 
-            if active_item is not None:
-                current_time = pygame.time.get_ticks()
-
-                if current_time - active_item.last_use_time > active_item.use_speed:
-                    active_item.last_use_time = current_time
-
-                    camera_x = self.model.rect.centerx - (self.config.screen_size[0] / 2)
-                    camera_y = self.model.rect.centery - (self.config.screen_size[1] / 2)
-
-                    if camera_x < 0:
-                        camera_x = 0
-                    elif camera_x > self.config.map_size[0] - self.config.screen_size[0]:
-                        camera_x = self.config.map_size[0] - self.config.screen_size[0]
-                    if camera_y < 0:
-                        camera_y = 0
-                    elif camera_y > self.config.map_size[1] - self.config.screen_size[1]:
-                        camera_y = self.config.map_size[1] - self.config.screen_size[1]
-
-                    mouse_position_x, mouse_position_y = pygame.mouse.get_pos()
-                    mouse_position_x += camera_x
-                    mouse_position_y += camera_y
-
-                    position_difference_x = mouse_position_x - self.model.rect.centerx
-                    position_difference_y = mouse_position_y - self.model.rect.centery
-
-                    distance_travelled = math.sqrt( pow(position_difference_x, 2) + pow(position_difference_y, 2) )
-
-                    if distance_travelled > 0:
-                        direction_x = position_difference_x / distance_travelled
-                        direction_y = position_difference_y / distance_travelled
-
-                        projectile = model.Projectile(self.config, self.model.rect.centerx, self.model.rect.centery,
-                                                     direction_x, direction_y, active_item.damage, self.config.weapon_bullet_speed, active_item.distance, self.config.projectile_texture)
-                        self.projectile_manager.add_projectile(projectile)
+            if active_item is not None and self._is_item_ready(active_item):
+                self._spawn_projectile(direction_x, direction_y, active_item)
 
 
     def vehicle_handler(self, event):
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_e:
-                for vehicle in self.cars_manager.cars_on_map:
-                    if self.model.rect.colliderect(vehicle.rect):
-                        if vehicle.rect.width == self.config.vehicle_hitbox_small[0]:
-                            self.model.current_vehicle = vehicle
-                            vehicle.position_x = vehicle.rect.x
-                            vehicle.position_y = vehicle.rect.y
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_e:
+            if self.model.current_vehicle is not None:
+                self.model.x = self.model.rect.centerx
+                self.model.visible = True
+                self.model.current_vehicle = None
+                return
 
-                            self.model.rect.center = vehicle.rect.center
+            for vehicle in self.cars_manager.cars_on_map:
+                if self.model.rect.colliderect(vehicle.rect):
+                    self.model.current_vehicle = vehicle
+                    vehicle.position_x = vehicle.rect.x
+                    vehicle.position_y = vehicle.rect.y
+                    self.model.rect.center = vehicle.rect.center
+
+                    self.model.current_vehicle = vehicle
+                    self.model.visible = not vehicle.hiding
+                    break
+
+
+    def reset_game(self):
+        self.config.state = "PLAYING"
+
+        self.model.hp = self.config.player["hp"]
+        self.model.position_x, self.model.position_y = self.config.player["spawn_location"]
+        self.model.rect.topleft = (self.model.position_x, self.model.position_y)
+        self.model.inventory = model.Inventory()
+
+        self.enemy_manager.reset_manager()
+        self.cars_manager.reset_manager()
+        self.model.current_vehicle = None
+        self.item_manager.reset_manager()
+        self.projectile_manager.bullets_on_map.clear()
 
 
     def main_loop(self):
-
         while self.running:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.running = False
 
-                self.inventory_handler(event)
-                self.vehicle_handler(event)
+                if event.type == pygame.KEYDOWN:
+                    if ((self.config.state == "START" or self.config.state == "GAME OVER") and
+                        event.key == pygame.K_ESCAPE):
+                        self.running = False
 
-            dt = self.clock.tick(self.config.fps) / 1000.0
+                    if ((self.config.state == "START" or self.config.state == "GAME OVER") and
+                        event.key == pygame.K_SPACE):
+                        self.reset_game()
 
-            for enemy in self.enemy_manager.enemies_spawned:
-                enemy.random_movement(dt, self.model)
+                    if (self.config.state == "PLAYING" and
+                        (event.key == pygame.K_p or event.key == pygame.K_ESCAPE)):
+                        self.config.state = "PAUSED"
+                    elif self.config.state == "PAUSED":
+                        if event.key == pygame.K_p: self.config.state = "PLAYING"
+                        if event.key == pygame.K_ESCAPE: self.config.state = "START"
+
+                if self.config.state == "PLAYING":
+                    self.inventory_handler(event)
+                    self.vehicle_handler(event)
+
+            dt = self.clock.tick(self.config.display["fps"]) / 1000.0
 
 
-            self.movement_handler(dt)
-            self.use_handler()
-            self.projectile_manager.move_projectiles(dt, self.enemy_manager, self.item_manager)
-            self.enemy_manager.spawn_enemies()
-            self.enemy_manager.replace_dead_enemies()
-            self.cars_manager.spawn_cars()
-            self.view.draw_world(self.model, self.item_manager, self.enemy_manager, self.cars_manager)
+            if self.config.state == "PLAYING":
+                if self.model.hp <= 0:
+                    self.config.state = "GAME OVER"
 
-            pygame.display.set_caption(f"GTA Łódź - FPS: {int(self.clock.get_fps())}")
+                for enemy in self.enemy_manager.enemies_spawned:
+                    enemy.think(self.model)
+                    enemy.update(dt, self.model)
+
+                self.movement_handler(dt)
+                self.use_handler()
+                self.projectile_manager.move_projectiles(dt, self.enemy_manager, self.item_manager)
+                self.enemy_manager.spawn_enemies()
+                self.enemy_manager.replace_dead_enemies()
+                self.cars_manager.spawn_cars()
+                self.view.draw_world(self.model, self.item_manager, self.enemy_manager)
+
+            elif self.config.state == "START":
+                self.view.draw_menu("SCHMOPP", "Press SPACE to Start")
+
+            elif self.config.state == "GAME OVER":
+                self.view.draw_menu("WASTED", "Press SPACE to Restart")
+
+            pygame.display.set_caption(f"Schmopp - FPS: {int(self.clock.get_fps())}")
 
         pygame.quit()
         sys.exit()
