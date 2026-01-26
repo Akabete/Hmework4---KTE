@@ -1,8 +1,6 @@
 import pygame
 import math
-import sys
-
-from pygame import mouse
+import sys, os
 
 import model
 
@@ -18,6 +16,22 @@ class Controller:
         self.enemy_manager = enemy_manager
         self.projectile_manager = projectile_manager
         self.cars_manager = cars_manager
+        self.highlithed_button = 0
+        self.menu_buttons = []
+
+        for i, text in enumerate(self.config.menu_options):
+            button_x = (self.config.display["screen_size"][0] / 2) - (self.config.menu_buttons["width"] / 2)
+            button_y = self.config.menu_buttons["menu_first_y"] + (i *
+                    (self.config.menu_buttons["height"] + self.config.menu_buttons["padding"]))
+
+            button_rect = pygame.Rect(button_x, button_y,
+                        self.config.menu_buttons["width"], self.config.menu_buttons["height"])
+
+            self.menu_buttons.append({
+                "text": text,
+                "rect": button_rect
+            })
+            pass
 
 
     def _get_mouse_position(self):
@@ -138,6 +152,15 @@ class Controller:
                     self.model.visible = not vehicle.hiding
                     break
 
+    @staticmethod
+    def open_settings():
+        file_path = "settings.py"
+
+        if os.path.exists(file_path):
+            os.startfile(file_path)
+        else:
+            print("File not found")
+
 
     def reset_game(self):
         self.config.state = "PLAYING"
@@ -153,7 +176,6 @@ class Controller:
         self.item_manager.reset_manager()
         self.projectile_manager.bullets_on_map.clear()
 
-
     def main_loop(self):
         while self.running:
             for event in pygame.event.get():
@@ -161,27 +183,45 @@ class Controller:
                     self.running = False
 
                 if event.type == pygame.KEYDOWN:
-                    if ((self.config.state == "START" or self.config.state == "GAME OVER") and
-                        event.key == pygame.K_ESCAPE):
-                        self.running = False
+                    if self.config.state == "START" or self.config.state == "GAME OVER":
+                        if event.key == pygame.K_ESCAPE:
+                            self.running = False
+                        elif event.key == pygame.K_DOWN or event.key == pygame.K_s:
+                            self.highlithed_button = (self.highlithed_button + 1) % len(self.menu_buttons)
+                        elif event.key == pygame.K_UP or event.key == pygame.K_w:
+                            self.highlithed_button = (self.highlithed_button - 1) % len(self.menu_buttons)
+                        elif event.key == pygame.K_RETURN:
+                            if self.highlithed_button == 0: self.reset_game()
+                            elif self.highlithed_button == 1: self.open_settings()
+                            else: self.running = False
 
-                    if ((self.config.state == "START" or self.config.state == "GAME OVER") and
-                        event.key == pygame.K_SPACE):
-                        self.reset_game()
-
-                    if (self.config.state == "PLAYING" and
-                        (event.key == pygame.K_p or event.key == pygame.K_ESCAPE)):
-                        self.config.state = "PAUSED"
+                    if self.config.state == "PLAYING":
+                        if event.key == pygame.K_p or event.key == pygame.K_ESCAPE:
+                            self.config.state = "PAUSED"
                     elif self.config.state == "PAUSED":
                         if event.key == pygame.K_p: self.config.state = "PLAYING"
                         if event.key == pygame.K_ESCAPE: self.config.state = "START"
+
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    if (self.config.state == "START" or self.config.state == "GAME OVER") and event.button == 1:
+                        for i, button in enumerate(self.menu_buttons):
+                            if button["rect"].collidepoint(event.pos):
+                                if i == 0: self.reset_game()
+                                elif i == 1: self.open_settings()
+                                else: self.running = False
 
                 if self.config.state == "PLAYING":
                     self.inventory_handler(event)
                     self.vehicle_handler(event)
 
-            dt = self.clock.tick(self.config.display["fps"]) / 1000.0
 
+            if self.config.state == "START" or self.config.state == "GAME OVER":
+                mouse_position = pygame.mouse.get_pos()
+                for i, button in enumerate(self.menu_buttons):
+                    if button["rect"].collidepoint(mouse_position):
+                        self.highlithed_button = i
+
+            dt = self.clock.tick(self.config.display["fps"]) / 1000.0
 
             if self.config.state == "PLAYING":
                 if self.model.hp <= 0:
@@ -190,7 +230,6 @@ class Controller:
                 for enemy in self.enemy_manager.enemies_spawned:
                     enemy.think(self.model)
                     enemy.update(dt, self.model)
-
                 self.movement_handler(dt)
                 self.use_handler()
                 self.projectile_manager.move_projectiles(dt, self.enemy_manager, self.item_manager)
@@ -199,11 +238,8 @@ class Controller:
                 self.cars_manager.spawn_cars()
                 self.view.draw_world(self.model, self.item_manager, self.enemy_manager)
 
-            elif self.config.state == "START":
-                self.view.draw_menu("SCHMOPP", "Press SPACE to Start")
-
-            elif self.config.state == "GAME OVER":
-                self.view.draw_menu("WASTED", "Press SPACE to Restart")
+            elif self.config.state == "START" or self.config.state == "GAME OVER":
+                self.view.draw_menu(self.menu_buttons, self.highlithed_button)
 
             pygame.display.set_caption(f"Schmopp - FPS: {int(self.clock.get_fps())}")
 

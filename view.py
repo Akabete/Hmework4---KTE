@@ -213,11 +213,17 @@ class View:
         self.screen.blit(text, (position_x - text.get_width() // 2, position_y))
 
 
-    def draw_menu(self, title, subtitle):
+    def draw_menu(self, buttons, highlited_index):
         self.screen.fill("black")
 
         center_x = self.config.display["screen_size"][0] // 2
-        self.draw_text(title, 72, center_x, 200, "red" if title == "WASTED" else "white")
-        self.draw_text(subtitle, 36, center_x, 350, "white")
+        title = "SCHMOPP" if self.config.state == "START" else "WASTED"
+        color = "white" if title == "SCHMOPP" else "red"
+        self.draw_text(title, 72, center_x, 100, color)
+
+        for i, button in enumerate(buttons):
+            color = "white" if i == highlited_index else "gray25"
+            pygame.draw.rect(self.screen, color, button["rect"], 3)
+            self.draw_text(button["text"], 36, button["rect"].centerx, button["rect"].y + 50, color)
 
         pygame.display.flip()

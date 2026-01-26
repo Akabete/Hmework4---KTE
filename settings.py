@@ -2,20 +2,32 @@ import pygame
 class Config:
     def __init__(self):
         self.state = "START"
+        self.menu_options = [
+            "START GAME",
+            "OPTIONS",
+            "QUIT GAME"
+        ]
+
+        self.menu_buttons = {
+            "width": 300,
+            "height": 150,
+            "padding": 20,
+            "menu_first_y": 250
+        }
 
         self.display = {
             "screen_size": (1200, 800),
             "fps": 60,
             "map_size": (6000, 4000),
             "map_texture": "assets/map_placeholder.png",
-            "font": "assets/Pricedown Bl.otf"
+            "font": "assets/Pricedown Bl.otf",
         }
 
         self.player = {
             "hitbox": (40, 60),
             "texture": "black",
             "hp": 100,
-            "spawn_location": (500, 500),
+            "spawn_location": (200, 200),
             "speed": 300.0,
             "sprint_bonus": 100.0
         }
@@ -66,7 +78,7 @@ class Config:
             "acceleration": 900.0,
             "max_speed": 900,
             "health": 50,
-            "rotation_speed": 60.0
+            "rotation_speed": 90.0
         }
 
         self.car = {
@@ -86,7 +98,7 @@ class Config:
             "acceleration": 50.0,
             "max_speed": 200,
             "health": 1000,
-            "rotation_speed": 1.0
+            "rotation_speed": 30.0
         }
 
         self.spawnable_vehicles = [
