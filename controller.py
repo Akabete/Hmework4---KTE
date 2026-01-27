@@ -164,6 +164,7 @@ class Controller:
 
     def reset_game(self):
         self.config.state = "PLAYING"
+        self.config.current_score = 0
 
         self.model.hp = self.config.player["hp"]
         self.model.position_x, self.model.position_y = self.config.player["spawn_location"]
@@ -176,70 +177,82 @@ class Controller:
         self.item_manager.reset_manager()
         self.projectile_manager.bullets_on_map.clear()
 
-    def main_loop(self):
-        while self.running:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    self.running = False
 
-                if event.type == pygame.KEYDOWN:
-                    if self.config.state == "START" or self.config.state == "GAME OVER":
-                        if event.key == pygame.K_ESCAPE:
-                            self.running = False
-                        elif event.key == pygame.K_DOWN or event.key == pygame.K_s:
-                            self.highlithed_button = (self.highlithed_button + 1) % len(self.menu_buttons)
-                        elif event.key == pygame.K_UP or event.key == pygame.K_w:
-                            self.highlithed_button = (self.highlithed_button - 1) % len(self.menu_buttons)
-                        elif event.key == pygame.K_RETURN:
-                            if self.highlithed_button == 0: self.reset_game()
-                            elif self.highlithed_button == 1: self.open_settings()
-                            else: self.running = False
+    def _handle_events(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT: self.running = False
 
-                    if self.config.state == "PLAYING":
-                        if event.key == pygame.K_p or event.key == pygame.K_ESCAPE:
-                            self.config.state = "PAUSED"
-                    elif self.config.state == "PAUSED":
-                        if event.key == pygame.K_p: self.config.state = "PLAYING"
-                        if event.key == pygame.K_ESCAPE: self.config.state = "START"
-
-                if event.type == pygame.MOUSEBUTTONDOWN:
-                    if (self.config.state == "START" or self.config.state == "GAME OVER") and event.button == 1:
-                        for i, button in enumerate(self.menu_buttons):
-                            if button["rect"].collidepoint(event.pos):
-                                if i == 0: self.reset_game()
-                                elif i == 1: self.open_settings()
-                                else: self.running = False
-
-                if self.config.state == "PLAYING":
-                    self.inventory_handler(event)
-                    self.vehicle_handler(event)
-
-
-            if self.config.state == "START" or self.config.state == "GAME OVER":
-                mouse_position = pygame.mouse.get_pos()
+            if self.config.state in ["START", "GAME OVER"]:
+                # Check for mouse movement to highlight buttons
+                mouse_pos = pygame.mouse.get_pos()
                 for i, button in enumerate(self.menu_buttons):
-                    if button["rect"].collidepoint(mouse_position):
+                    if button["rect"].collidepoint(mouse_pos):
                         self.highlithed_button = i
 
-            dt = self.clock.tick(self.config.display["fps"]) / 1000.0
+            if self.config.state == "START" or self.config.state == "GAME OVER":
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_UP:
+                        self.highlithed_button = (self.highlithed_button - 1) % len(self.config.menu_options)
+                    if event.key == pygame.K_DOWN:
+                        self.highlithed_button = (self.highlithed_button + 1) % len(self.config.menu_options)
+
+                    if event.key == pygame.K_RETURN:
+                        # Now this will work because highlithed_button is updated!
+                        if self.highlithed_button == 0: self.reset_game()
+                        elif self.highlithed_button == 1: self.open_settings()
+                        elif self.highlithed_button == 2: self.running = False
+
+                if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:  # Left click
+                    if self.highlithed_button == 0:
+                        self.reset_game()
+                    elif self.highlithed_button == 1:
+                        self.open_settings()
+                    elif self.highlithed_button == 2:
+                        self.running = False
 
             if self.config.state == "PLAYING":
-                if self.model.hp <= 0:
-                    self.config.state = "GAME OVER"
+                self.inventory_handler(event)
+                self.vehicle_handler(event)
 
-                for enemy in self.enemy_manager.enemies_spawned:
-                    enemy.think(self.model)
-                    enemy.update(dt, self.model)
-                self.movement_handler(dt)
-                self.use_handler()
-                self.projectile_manager.move_projectiles(dt, self.enemy_manager, self.item_manager)
-                self.enemy_manager.spawn_enemies()
-                self.enemy_manager.replace_dead_enemies()
-                self.cars_manager.spawn_cars()
-                self.view.draw_world(self.model, self.item_manager, self.enemy_manager)
 
-            elif self.config.state == "START" or self.config.state == "GAME OVER":
-                self.view.draw_menu(self.menu_buttons, self.highlithed_button)
+    def _update_logic(self, dt):
+        if self.config.state != "PLAYING": return
+
+        if self.model.hp <= 0:
+            self.config.state = "GAME OVER"
+            if self.config.current_score > self.config.highscore:
+                self.config.highscore = self.config.current_score
+                self.config.save_high_score()
+
+        for enemy in self.enemy_manager.enemies_spawned:
+            enemy.think(self.model)
+            enemy.update(dt, self.model)
+
+        self.movement_handler(dt)
+        self.use_handler()
+        self.projectile_manager.move_projectiles(dt, self.enemy_manager, self.item_manager)
+
+        self.enemy_manager.spawn_enemies()
+        self.enemy_manager.replace_dead_enemies()
+        self.cars_manager.spawn_cars()
+
+
+
+    def _render(self):
+        if self.config.state == "PLAYING":
+            self.view.draw_world(self.model, self.item_manager, self.enemy_manager)
+        elif self.config.state in ["START", "GAME OVER"]:
+            self.view.draw_menu(self.menu_buttons, self.highlithed_button)
+
+
+    def main_loop(self):
+        while self.running:
+            dt = self.clock.tick(self.config.display["fps"]) / 1000.0
+
+            self._handle_events()
+            self._update_logic(dt)
+            self._render()
+
 
             pygame.display.set_caption(f"Schmopp - FPS: {int(self.clock.get_fps())}")
 

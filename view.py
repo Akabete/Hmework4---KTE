@@ -11,6 +11,11 @@ class View:
         self.cars_manager = cars_manager
         self.textures = {}
         self.hand_textures = {}
+        self.textures[self.config.player["texture"]] = pygame.image.load(self.config.player["texture"]).convert_alpha()
+        self.textures[self.config.enemy["texture"]] = pygame.image.load(self.config.enemy["texture"]).convert_alpha()
+        for vehicle in self.config.spawnable_vehicles:
+            path = vehicle["texture"]
+            self.textures[path] = pygame.image.load(vehicle["texture"]).convert_alpha()
 
         for weapon_data in self.config.spawnable_weapons:
             path =  weapon_data["texture"]
@@ -51,7 +56,9 @@ class View:
             screen_position = self.world_to_screen(player_model.rect.topleft, camera_rect)
             player_screen_rect = pygame.Rect(screen_position, player_model.rect.size)
 
-            pygame.draw.rect(self.screen, self.config.player["texture"], player_screen_rect)
+            pygame.draw.rect(self.screen, self.config.player["hitbox_color"], player_screen_rect)
+            sprite = self.textures[self.config.player["texture"]]
+            self.screen.blit(sprite, screen_position)
             return player_screen_rect
         return None
 
@@ -65,7 +72,18 @@ class View:
             if enemy.hp <= 0:
                 self._draw_dead_enemy(enemy, enemy_screen_rect, current_time)
             else:
-                pygame.draw.rect(self.screen, self.config.enemy["texture"], enemy_screen_rect)
+                pygame.draw.rect(self.screen, self.config.enemy["hitbox_color"], enemy_screen_rect)
+                sprite = self.textures[self.config.enemy["texture"]]
+                self.screen.blit(sprite, screen_position)
+
+                bar_width = enemy.rect.width
+                bar_height = self.config.enemy["healthbar_height"]
+                bar_x = enemy_screen_rect.x
+                bar_y = enemy_screen_rect.y - 10
+
+                pygame.draw.rect(self.screen, "red", (bar_x, bar_y, bar_width, bar_height))
+                health_ratio = max(0, enemy.hp / self.config.enemy["hp"])
+                pygame.draw.rect(self.screen, "green", (bar_x, bar_y, bar_width * health_ratio, bar_height))
 
     def _draw_dead_enemy(self, enemy, screen_rect, current_time):
         time_passed = current_time - enemy.death_time
@@ -75,7 +93,7 @@ class View:
 
         # 3. Create the surface and apply transparency
         enemy_surface = pygame.Surface(enemy.rect.size).convert_alpha()
-        enemy_surface.fill(self.config.enemy["texture"])
+        enemy_surface.fill("red")
         enemy_surface.set_alpha(alpha)
 
         self.screen.blit(enemy_surface, screen_rect)
@@ -94,7 +112,11 @@ class View:
             screen_position = self.world_to_screen(vehicle.rect.topleft, camera_rect)
             car_screen_rect = pygame.Rect(screen_position, vehicle.rect.size)
 
-            pygame.draw.rect(self.screen, vehicle.texture, car_screen_rect)
+            pygame.draw.rect(self.screen, vehicle.hitbox_color, car_screen_rect)
+
+            sprite = self.textures[vehicle.texture]
+            self.screen.blit(sprite, screen_position)
+
 
 
     def _draw_projectiles(self, camera_rect):
@@ -203,6 +225,7 @@ class View:
 
         self._draw_held_item(player_model, player_screen_rect)
         self.draw_inventory(player_model)
+        self.draw_ui(player_model)
 
         pygame.display.flip()
 
@@ -220,6 +243,11 @@ class View:
         title = "SCHMOPP" if self.config.state == "START" else "WASTED"
         color = "white" if title == "SCHMOPP" else "red"
         self.draw_text(title, 72, center_x, 100, color)
+        if self.config.state == "GAME OVER":
+            score_text = f"Final Score: {self.config.current_score}"
+            best_score_text = f"Best Score: {self.config.highscore}"
+            self.draw_text(score_text, 32, center_x, 180, "white")
+            self.draw_text(best_score_text, 24, center_x, 220, "yellow")
 
         for i, button in enumerate(buttons):
             color = "white" if i == highlited_index else "gray25"
@@ -227,3 +255,12 @@ class View:
             self.draw_text(button["text"], 36, button["rect"].centerx, button["rect"].y + 50, color)
 
         pygame.display.flip()
+
+
+    def draw_ui(self, player):
+        health_text = f"Health: {player.hp}"
+        self.draw_text(health_text, 36, 1050, 30, "blue")
+
+        score_text = f"Score: {self.config.current_score}"
+        self.draw_text(score_text, 36, 1050, 80, "blue")
+

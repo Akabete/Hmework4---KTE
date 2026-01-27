@@ -175,7 +175,7 @@ class Enemy_Manager:
 
 class Cars:
     def __init__(self, config, coordinate_x, coordinate_y, texture, max_speed,
-                 acceleration, rotation_speed, health, hitbox, hiding, angle = 0, current_speed = 0):
+                 acceleration, rotation_speed, health, hitbox, hiding, hitbox_color, angle = 0, current_speed = 0):
         self.config = config
 
         self.rect = pygame.Rect(coordinate_x, coordinate_y, hitbox[0], hitbox[1])
@@ -188,12 +188,13 @@ class Cars:
         self.rotation_speed = rotation_speed
         self.health = health
         self.hiding = hiding
+        self.hitbox_color = hitbox_color
 
         self.current_speed = current_speed
         self.angle = angle
 
 
-    def drive(self, direction_x, direction_y, dt):
+    def _acceleration(self, direction_y, dt):
         if direction_y != 0:
             push_direction = -direction_y
 
@@ -211,6 +212,8 @@ class Cars:
                 self.current_speed += self.config.vehicles["friction"] * dt
                 if self.current_speed > 0: self.current_speed = 0
 
+
+    def _physics(self, direction_x, dt):
         radians = math.radians(self.angle)
 
         change_x = self.current_speed * math.cos(radians) * dt
@@ -222,6 +225,11 @@ class Cars:
         self.rect.x = int(self.position_x)
         self.rect.y = int(self.position_y)
 
+        if abs(self.current_speed) > 1:
+            self.angle += direction_x * self.rotation_speed * dt
+
+
+    def _boundaries(self):
         if self.rect.left < 0:
             self.rect.left = 0
             self.position_x = float(self.rect.x)
@@ -240,8 +248,11 @@ class Cars:
             self.position_y = float(self.rect.y)
             self.current_speed = 0
 
-        if abs(self.current_speed) > 1:
-            self.angle += direction_x * self.rotation_speed * dt
+
+    def drive(self, direction_x, direction_y, dt):
+        self._physics(direction_x, dt)
+        self._acceleration(direction_y, dt)
+        self._boundaries()
 
 
 class Cars_Manager:
@@ -358,8 +369,9 @@ class Projectile:
 
 
 class Projectile_Manager:
-    def __init__(self):
+    def __init__(self, config):
         self.bullets_on_map = []
+        self.config = config
 
     def add_projectile(self, projectile):
         self.bullets_on_map.append(projectile)
@@ -378,6 +390,7 @@ class Projectile_Manager:
                     enemy.hp -= projectile.damage
 
                     if enemy.hp <= 0:
+                        self.config.current_score += self.config.enemy["points_given"]
                         enemy.death_time = pygame.time.get_ticks()
                         enemy.item_dropper(item_manager)
 

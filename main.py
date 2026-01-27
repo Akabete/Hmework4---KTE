@@ -20,7 +20,7 @@ def main():
     item_manager = Item_Manager(config)
     item_manager.spawn_items()
 
-    projectile_manager = Projectile_Manager()
+    projectile_manager = Projectile_Manager(config)
 
     cars_manager = Cars_Manager(config)
 

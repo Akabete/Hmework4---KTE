@@ -2,6 +2,8 @@ import pygame
 class Config:
     def __init__(self):
         self.state = "START"
+        self.current_score = 0
+        self.highscore = self.load_high_score()
         self.menu_options = [
             "START GAME",
             "OPTIONS",
@@ -25,7 +27,8 @@ class Config:
 
         self.player = {
             "hitbox": (40, 60),
-            "texture": "black",
+            "hitbox_color": "black",
+            "texture": "assets/people/player.png",
             "hp": 100,
             "spawn_location": (200, 200),
             "speed": 300.0,
@@ -34,7 +37,8 @@ class Config:
 
         self.enemy = {
             "hitbox": (40, 60),
-            "texture": "blue",
+            "hitbox_color": "blue",
+            "texture": "assets/people/enemy.png",
             "hp": 100,
             "speed": 150.0,
             "sprint_bonus": 100.0,
@@ -43,12 +47,14 @@ class Config:
             "decision_speed": 1000,
             "attack_speed": 1000,
             "distance_to_chase": 300,
-            "fade_time": 2500
+            "fade_time": 2500,
+            "points_given": 100,
+            "healthbar_height": 5
 
         }
 
         self.combat = {
-            "projectile_texture": "assets/bullet.png",
+            "projectile_texture": "assets/weapons/bullet.png",
             "bullet_speed": 500,
             "grenade_speed": 300,
             "special_speed": 50,
@@ -74,7 +80,8 @@ class Config:
         self.bike = {
             "hiding": False,
             "hitbox": (30, 70),
-            "texture": "red",
+            "hitbox_color": "red",
+            "texture": "assets/vehicles/bike.png",
             "acceleration": 900.0,
             "max_speed": 900,
             "health": 50,
@@ -84,7 +91,8 @@ class Config:
         self.car = {
             "hiding": True,
             "hitbox": (50, 70),
-            "texture": "green",
+            "hitbox_color": "green",
+            "texture": "assets/vehicles/car.png",
             "acceleration": 450.0,
             "max_speed": 800,
             "health": 100,
@@ -94,7 +102,8 @@ class Config:
         self.tank = {
             "hiding": True,
             "hitbox": (60, 80),
-            "texture": "dark green",
+            "hitbox_color": "dark green",
+            "texture": "assets/vehicles/tank.png",
             "acceleration": 50.0,
             "max_speed": 200,
             "health": 1000,
@@ -118,7 +127,7 @@ class Config:
         self.crowbar = {
             "category": "melee",
             "name": "Crowbar",
-            "texture": "assets/crowbar.png",
+            "texture": "assets/weapons/crowbar.png",
             "spawn_frequency": (0.0, 0.2),
             "damage": 100,
             "projectile_range": 50,
@@ -129,7 +138,7 @@ class Config:
         self.pistol = {
             "category": "pistol",
             "name": "Pistol",
-            "texture": "assets/pistol.png",
+            "texture": "assets/weapons/pistol.png",
             "spawn_frequency": (0.3, 0.4),
             "damage": 25,
             "projectile_range": 600,
@@ -140,7 +149,7 @@ class Config:
         self.rifle = {
             "category": "rifle",
             "name": "Rifle",
-            "texture": "assets/rifle.png",
+            "texture": "assets/weapons/rifle.png",
             "spawn_frequency": (0.5, 0.6),
             "damage": 15,
             "projectile_range": 800,
@@ -151,7 +160,7 @@ class Config:
         self.flamethrower = {
             "category": "special",
             "name": "Flamethrower",
-            "texture": "assets/flamethrower.png",
+            "texture": "assets/weapons/flamethrower.png",
             "spawn_frequency": (0.7, 0.8),
             "damage": 5,
             "projectile_range": 500,
@@ -162,7 +171,7 @@ class Config:
         self.grenade = {
             "category": "throwable",
             "name": "Grenade",
-            "texture": "assets/grenade.png",
+            "texture": "assets/weapons/grenade.png",
             "spawn_frequency": (0.9, 1.0),
             "damage": 50,
             "projectile_range": 1000,
@@ -177,3 +186,19 @@ class Config:
             self.flamethrower,
             self.grenade
         ]
+
+    @staticmethod
+    def load_high_score():
+        try:
+            with open("highscore.txt", "r") as file:
+                return int(file.read())
+        except (FileNotFoundError, ValueError):
+            return 0
+
+
+
+    def save_high_score(self):
+        with open("highscore.txt", "w") as file:
+            file.write(str(self.highscore))
+
+
