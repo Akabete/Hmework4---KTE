@@ -2,6 +2,7 @@ import pygame
 import random
 import math
 
+
 class Player:
     def __init__(self, config):
         self.config = config
@@ -9,7 +10,7 @@ class Player:
         start_x, start_y = player_settings["spawn_location"]
 
         self.rect = pygame.Rect(start_x, start_y,
-                    player_settings["hitbox"][0], player_settings["hitbox"][1])
+                            player_settings["hitbox"][0], player_settings["hitbox"][1])
         self.position_x = float(start_x)
         self.position_y = float(start_y)
         self.hp = player_settings["hp"]
@@ -51,7 +52,6 @@ class Player:
             self.rect.bottom = self.config.display["map_size"][1]
             self.position_y = float(self.rect.y)
 
-
     def sync_with_vehicle(self):
         if self.current_vehicle is not None:
             self.rect.center = self.current_vehicle.rect.center
@@ -60,7 +60,8 @@ class Player:
 
     def item_picker(self, item_manager):
         for item in item_manager.items_spawned[:]:
-            item_hitbox = pygame.Rect(item.coordinate_x, item.coordinate_y, self.config.items["item_size"], self.config.items["item_size"])
+            item_hitbox = pygame.Rect(item.coordinate_x, item.coordinate_y,
+                                      self.config.items["item_size"], self.config.items["item_size"])
 
             if self.rect.colliderect(item_hitbox) and self.inventory.add_items(item):
                 item_manager.items_spawned.remove(item)
@@ -94,9 +95,9 @@ class Enemy(Player):
         self.rect.x = int(self.position_x)
         self.rect.y = int(self.position_y)
 
-
     def think(self, player):
-        if self.hp <= 0: return
+        if self.hp <= 0:
+            return
 
         current_time = pygame.time.get_ticks()
         direction_x = self.position_x - player.position_x

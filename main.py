@@ -27,10 +27,10 @@ def main():
     view = View(screen, config, projectile_manager, cars_manager)
 
     controller = Controller(player, view, config, item_manager,
-                enemy_manager, projectile_manager, cars_manager)
-
+                            enemy_manager, projectile_manager, cars_manager)
 
     controller.main_loop()
+
 
 if __name__ == '__main__':
     main()
