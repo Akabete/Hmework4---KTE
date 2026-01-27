@@ -6,6 +6,16 @@ from controller import Controller
 
 
 def main():
+    """
+    Initializes the game, sets up the main game components, and starts the main
+    loop.
+
+    This function is responsible for initializing Pygame, creating the game
+    configuration, managing various entities in the game (player, enemies, items,
+    projectiles, and cars), and starting the game loop through the controller.
+
+    :return: None
+    """
     pygame.init()
 
     config = Config()
@@ -26,11 +36,18 @@ def main():
 
     view = View(screen, config, projectile_manager, cars_manager)
 
-    controller = Controller(player, view, config, item_manager,
-                            enemy_manager, projectile_manager, cars_manager)
+    controller = Controller(
+        player,
+        view,
+        config,
+        item_manager,
+        enemy_manager,
+        projectile_manager,
+        cars_manager,
+    )
 
     controller.main_loop()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
