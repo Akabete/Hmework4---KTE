@@ -629,7 +629,6 @@ class Item_Manager:
             rand_x = random.randint(0, self.config.display["map_size"][0])
             rand_y = random.randint(0, self.config.display["map_size"][1])
             roll = random.randint(0, 100)
-            roll = 66
 
             for weapon in self.config.spawnable_weapons:
                 low, high = weapon["spawn_frequency"]
