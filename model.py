@@ -425,11 +425,11 @@ class Cars_Manager:
 
     def spawn_cars(self):
         """
-        Spawns cars on the map.
+        Spawns cars on the map based on the spawnable_vehicles list in the settings file.
         :return: None
         """
         spawn_offset = 1
-        while len(self.cars_on_map) < self.config.vehicles["amount"]:
+        while len(self.cars_on_map) < len(self.config.spawnable_vehicles):
             for vehicle_data in self.config.spawnable_vehicles:
                 position_x = self.config.vehicles["first_spawn_x"] * spawn_offset
                 position_y = self.config.vehicles["first_spawn_y"]
@@ -438,7 +438,7 @@ class Cars_Manager:
                 self.cars_on_map.append(new_vehicle)
                 spawn_offset += 1
 
-                if len(self.cars_on_map) >= self.config.vehicles["amount"]:
+                if len(self.cars_on_map) >= len(self.config.spawnable_vehicles):
                     break
 
     def reset_manager(self):
@@ -629,6 +629,7 @@ class Item_Manager:
             rand_x = random.randint(0, self.config.display["map_size"][0])
             rand_y = random.randint(0, self.config.display["map_size"][1])
             roll = random.randint(0, 100)
+            roll = 66
 
             for weapon in self.config.spawnable_weapons:
                 low, high = weapon["spawn_frequency"]
