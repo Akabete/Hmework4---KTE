@@ -2,62 +2,14 @@ import pygame
 
 
 class Config:
+    """
+    Class representing the game configuration.
+    """
+
     def __init__(self):
         """
-        Represents the configuration and state management for a game environment.
-
-        This class provides a centralized location for managing various game properties,
-        including game state, menu options, player attributes, enemy characteristics,
-        combat mechanics, inventory settings, vehicle details, item properties,
-        and weapon configurations. The attributes are structured to ensure
-        easy extensibility and readability for further development.
-
-        Attributes
-        ----------
-        :ivar str state:
-            The current state of the game, starting with "START".
-        :ivar int current_score:
-            The current score of the game.
-        highscore: int
-            The highest recorded score, loaded using the load_high_score method.
-        menu_options: list of str
-            A list of menu options available to the player.
-        menu_buttons: dict
-            Configuration for the properties of menu buttons, such as width and height.
-        display: dict
-            Configuration for display-related properties like screen size and FPS.
-        player: dict
-            Properties related to the player, such as hitbox and speed.
-        enemy: dict
-            Properties related to enemies, such as speed and decision-making.
-        combat: dict
-            Configuration for combat mechanics, like projectile speed and recoil.
-        inventory_key_map: dict
-            Mapping of inventory slots to keyboard keys for quick access.
-        vehicles: dict
-            General configuration for vehicles, like spawn position and friction.
-        bike: dict
-            Detailed properties for the bike vehicle, such as speed and health.
-        car: dict
-            Detailed properties for the car vehicle, including hiding capability.
-        tank: dict
-            Specifications for the tank vehicle, focusing on durability and power.
-        spawnable_vehicles: list of dict
-            A list of vehicles that can be spawned in the game environment.
-        items: dict
-            Configuration related to item properties, like size and inventory capacity.
-        crowbar: dict
-            Configuration for the crowbar weapon, including damage and usage speed.
-        pistol: dict
-            Configuration for the pistol weapon, specifying damage and range.
-        rifle: dict
-            Definitions for the rifle weapon, highlighting its long-range capabilities.
-        flamethrower: dict
-            Configuration for the flamethrower weapon, with a focus on special abilities.
-        grenade: dict
-            Definitions for the grenade weapon, detailing its explosion effects.
-        spawnable_weapons: list of dict
-            A list of weapons that can be spawned in the game world.
+        Initializes the Config class.
+        :return: None
         """
         self.state = "START"
         self.current_score = 0
@@ -183,7 +135,7 @@ class Config:
             "category": "melee",
             "name": "Crowbar",
             "texture": "assets/weapons/crowbar.png",
-            "spawn_frequency": (0.0, 0.2),
+            "spawn_frequency": (0, 20),
             "damage": 100,
             "projectile_range": 50,
             "use_speed": 500,
@@ -194,7 +146,7 @@ class Config:
             "category": "pistol",
             "name": "Pistol",
             "texture": "assets/weapons/pistol.png",
-            "spawn_frequency": (0.3, 0.4),
+            "spawn_frequency": (30, 40),
             "damage": 25,
             "projectile_range": 600,
             "use_speed": 300,
@@ -205,7 +157,7 @@ class Config:
             "category": "rifle",
             "name": "Rifle",
             "texture": "assets/weapons/rifle.png",
-            "spawn_frequency": (0.5, 0.6),
+            "spawn_frequency": (50, 60),
             "damage": 15,
             "projectile_range": 800,
             "use_speed": 100,
@@ -216,7 +168,7 @@ class Config:
             "category": "special",
             "name": "Flamethrower",
             "texture": "assets/weapons/flamethrower.png",
-            "spawn_frequency": (0.7, 0.8),
+            "spawn_frequency": (70, 80),
             "damage": 5,
             "projectile_range": 500,
             "use_speed": 50,
@@ -227,7 +179,7 @@ class Config:
             "category": "throwable",
             "name": "Grenade",
             "texture": "assets/weapons/grenade.png",
-            "spawn_frequency": (0.9, 1.0),
+            "spawn_frequency": (90, 100),
             "damage": 50,
             "projectile_range": 1000,
             "use_speed": 500,
@@ -245,14 +197,8 @@ class Config:
     @staticmethod
     def load_high_score():
         """
-        Loads the high score from a file named 'highscore.txt'.
-
-        If the file does not exist or contains invalid data (e.g., not an integer),
-        the method returns 0 as the default high score.
-
-        :return: The loaded high score as an integer, or 0 if there are issues reading or
-                 interpreting the file.
-        :rtype: Int
+        Loads the high score from a file.
+        :return: Int
         """
         try:
             with open("highscore.txt", "r") as file:
@@ -263,11 +209,6 @@ class Config:
     def save_high_score(self):
         """
         Saves the current high score to a file.
-
-        This method writes the value of the 'highscore'
-        attribute to a file named 'highscore.txt'. The file
-        is created if it does not exist and overwritten if it does.
-
         :return: None
         """
         with open("highscore.txt", "w") as file:
